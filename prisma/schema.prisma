@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 1. Пользователи (Покупатели и Админы)
+model User {
+  id       Int     @id @default(autoincrement())
+  email    String  @unique
+  password String  // Скоро мы научимся шифровать пароли!
+  role     String  @default("CUSTOMER") // Может быть "CUSTOMER" или "ADMIN"
+  
+  orders   Order[] // Связь: у юзера много заказов
+}
+
+// 2. Товары на складе
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  price       Float   // Дробное число для цены
+  stock       Int     @default(0) // Сколько штук лежит на складе
+  
+  orderItems  OrderItem[]
+}
+
+// 3. Заказ (Чек)
+model Order {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  status    String   @default("PENDING") // Статусы: PENDING, PAID, SHIPPED
+  
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  
+  items     OrderItem[]
+}
+
+// 4. Позиция в заказе (Строчка в чеке)
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  quantity  Int     // Сколько штук этого товара купили
+  price     Float   // ЗАЧЕМ ЦЕНА ТУТ? Чтобы если товар подорожает завтра, в старом чеке цена не изменилась!
+  
+  orderId   Int
+  order     Order   @relation(fields: [orderId], references: [id])
+  
+  productId Int
+  product   Product @relation(fields: [productId], references: [id])
+}
