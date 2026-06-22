@@ -8,46 +8,49 @@ datasource db {
 }
 
 model User {
-  id       Int     @id @default(autoincrement())
-  email    String  @unique
-  password String  
-  role     String  @default("CUSTOMER") 
+  id       Int      @id @default(autoincrement())
+  email    String   @unique
+  password String
+  name     String?
+  role     String   @default("CUSTOMER")
   
-  orders   Order[] // Связь: у юзера много заказов
+  // Связь: у юзера может быть массив заказов
+  orders   Order[]  
 }
-
 
 model Product {
-  id          Int     @id @default(autoincrement())
+  id          Int         @id @default(autoincrement())
   name        String
   description String?
-  price       Float   
-  stock       Int     @default(0) 
+  price       Float
+  stock       Int         // Количество товара на складе (очень важно для fulfillment!)
   
-  orderItems  OrderItem[]
+  // Связь: товар может числиться в разных пунктах заказов
+  orderItems  OrderItem[] 
 }
-
 
 model Order {
-  id        Int      @id @default(autoincrement())
-  createdAt DateTime @default(now())
-  status    String   @default("PENDING") // Статусы: PENDING, PAID, SHIPPED
+  id        Int         @id @default(autoincrement())
+  createdAt DateTime    @default(now())
+  status    String      @default("PENDING") // Статусы: PENDING, PAID, SHIPPED, CANCELLED
   
+  // Внешний ключ: кто сделал заказ
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
   
-  items     OrderItem[]
+  // Связь: список конкретных товаров в этом заказе
+  items     OrderItem[] 
 }
 
-
+// Промежуточная таблица (потому что в заказе может быть 5 одинаковых ноутбуков)
 model OrderItem {
   id        Int     @id @default(autoincrement())
-  quantity  Int     
-  price     Float   
-  
+  quantity  Int     // Сколько штук купили
+  price     Float   // Цена на момент покупки (важно фиксировать, вдруг товар потом подорожает!)
+
   orderId   Int
   order     Order   @relation(fields: [orderId], references: [id])
-  
+
   productId Int
   product   Product @relation(fields: [productId], references: [id])
 }
