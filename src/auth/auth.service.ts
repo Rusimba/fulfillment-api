@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PrismaService } from '../prisma.service';
+import { Injectable, UnauthorizedException,ConflictException} from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt'; // <-- 1. Импорт
+import { RegisterDto } from './dto/register.dto';
 
 @Injectable()
 export class AuthService {
@@ -11,6 +12,23 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
   ) {}
+  async register(registerDto: RegisterDto) {
+    if (await this.prisma.user.findUnique({ where: { email: registerDto.email } })) {
+      throw new ConflictException('Пользователь с таким email уже существует');
+    }
+    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const user = await this.prisma.user.create({
+      data: {
+        email: registerDto.email,
+        password: hashedPassword, // ← сохраняем хеш, не открытый пароль
+        name: registerDto.name,
+      },
+    });
+    const payload = { sub: user.id, email: user.email, role: user.role };
+    const token = await this.jwtService.signAsync(payload);
+
+    return { access_token: token };
+  }
 
   async login(loginDto: LoginDto) {
     // 1. Ищем пользователя в базе

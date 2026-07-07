@@ -1,65 +1,66 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { PrismaService } from '../prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 
 @Injectable()
 export class OrdersService {
   constructor(private prisma: PrismaService) {}
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
-    // 1. Вытаскиваем все ID товаров, которые хочет купить пользователь
-    const productIds = createOrderDto.items.map(item => item.productId);
+    return await this.prisma.$transaction(async (prisma) => {
+    // 1. Получаем товары С БЛОКИРОВКОЙ (FOR UPDATE)
+      const productIds = createOrderDto.items.map(item => item.productId);
+      const dbProducts = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+      });
 
-    // 2. Достаем эти товары ИЗ БАЗЫ ДАННЫХ (чтобы узнать их настоящую цену)
-    const dbProducts = await this.prisma.product.findMany({
-      where: { id: { in: productIds } }
-    });
-    for (const item of createOrderDto.items) {
-      const realProduct = dbProducts.find(p => p.id === item.productId);
-      if (!realProduct) {
-        throw new BadRequestException(`Товар с ID ${item.productId} не найден`);
-      }
-      if (realProduct.stock < item.quantity) {
-        throw new BadRequestException(
-          `Недостаточно товара "${realProduct.name}". Вы хотите ${item.quantity}, а в наличии всего ${realProduct.stock} шт.`
-        );
-      }
-    }
-
-    // 3. Создаем заказ
-    const order = await this.prisma.order.create({
-      data: {
-        userId: userId,
-        items: {
-          create: createOrderDto.items.map(item => {
-            // Ищем настоящий товар в массиве, который мы только что достали из БД
-            const realProduct = dbProducts.find(p => p.id === item.productId);
-            if (!realProduct) {
-              throw new BadRequestException(`Товар с ID ${item.productId} не найден`);
-            }
-
-            return {
-              quantity: item.quantity,
-              price: realProduct.price, // БЕРЕМ ЦЕНУ ИЗ БД, А НЕ ОТ ФРОНТЕНДА! 🔒
-              product: {
-                connect: { id: item.productId } // Правильный синтаксис связи Prisma 🔗
-              }
-            };
-          })
+      // 2. Проверяем наличие и stock
+      for (const item of createOrderDto.items) {
+        const realProduct = dbProducts.find(p => p.id === item.productId);
+        if (!realProduct) {
+          throw new BadRequestException(
+            `Товар с ID ${item.productId} не найден`,
+          );
+        }
+        if (realProduct.stock < item.quantity) {
+          throw new BadRequestException(
+            `Недостаточно товара "${realProduct.name}". Вы хотите ${item.quantity}, а в наличии всего ${realProduct.stock} шт.`,
+          );
         }
       }
-    });
 
-    // 4. Уменьшаем остатки на складе (stock) для каждого купленного товара
-    for (const item of createOrderDto.items) {
-      await this.prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } }
+      // 3. Создаём заказ
+      const order = await prisma.order.create({
+      data: {
+          userId: userId,
+          items: {
+            create: createOrderDto.items.map((item) => {
+              const realProduct = dbProducts.find(
+                (p) => p.id === item.productId,
+              );
+              return {
+                quantity: item.quantity,
+                price: realProduct.price,
+                product: {
+                  connect: { id: item.productId },
+                },
+              };
+            }),
+          },
+        },
       });
-    }
 
-    return order;
+      // 4. Уменьшаем stock
+      for (const item of createOrderDto.items) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        });
+      }
+
+      return order;
+    });
   }
   findMyOrders(userId: number) {
     return this.prisma.order.findMany({

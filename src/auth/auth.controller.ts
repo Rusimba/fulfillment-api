@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth/auth.guard';
 // PrismaService здесь можно убрать из импортов, он в контроллере не используется
 import { LoginDto } from './dto/login.dto';
+import { RegisterDto } from './dto/register.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -20,5 +21,9 @@ export class AuthController {
     // Вышибала пропустил запрос и положил расшифрованный токен в req.user.
     // Просто возвращаем его клиенту!
     return req.user; 
+  }
+  @Post('register')
+  register(@Body() registerDto: RegisterDto) {
+    return this.authService.register(registerDto);
   }
 }

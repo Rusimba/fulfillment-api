@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
       // 3. Светим на браслет ультрафиолетом! 
       // verifyAsync расшифрует токен и проверит его срок годности и подпись
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: 'СУПЕР_СЕКРЕТНЫЙ_КЛЮЧ', // Должно совпадать с тем, что в auth.module!
+        secret: process.env.JWT_SECRET // Должно совпадать с тем, что в auth.module!
         });
 
       // 4. САМОЕ ВАЖНОЕ: Кладем расшифрованные данные Ивана прямо в запрос.

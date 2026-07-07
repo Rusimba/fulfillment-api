@@ -1,0 +1,47 @@
+# Git
+.git
+.gitignore
+
+# Зависимости (скопируем через COPY package*.json)
+node_modules
+npm-debug.log*
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# Окружение (НИКОГДА не копируем секреты!)
+.env
+.env.local
+.env.*.local
+
+# Документация
+README.md
+README.RU.md
+LICENSE
+docs/
+
+# Тесты
+coverage/
+test/
+*.spec.ts
+*.test.ts
+jest.config.*
+
+# Логи
+*.log
+logs/
+
+# OS файлы
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+dist/
