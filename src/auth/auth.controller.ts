@@ -1,13 +1,24 @@
-import { Controller, Post, Body, UseGuards, Get, Request} from '@nestjs/common'; // <-- Добавили Request
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Request,
+} from '@nestjs/common'; // <-- Добавили Request
 import { AuthService } from './auth.service';
 import { AuthGuard } from './guards/auth/auth.guard';
 // PrismaService здесь можно убрать из импортов, он в контроллере не используется
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RedisService } from 'src/redis/redis.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly redisService: RedisService,
+  ) {}
 
   @Post('login')
   login(@Body() loginDto: LoginDto) {
@@ -25,5 +36,14 @@ export class AuthController {
   @Post('register')
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+@Post('logout')
+@UseGuards(AuthGuard)
+  async logout(@Request() req) {
+    const token = req.headers.authorization.split(' ')[1];
+    const exp = req.user.exp;
+    const ttl = Math.floor(exp - Date.now() / 1000);
+    await this.redisService.setWithTtl('blacklist:' + token, 'true', ttl);
+    return { message: 'Logged out successfully' };
   }
 }

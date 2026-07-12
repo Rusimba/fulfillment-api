@@ -9,6 +9,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { CustomThrottlerGuard } from './common/guards/custom-throttler.guards';
 import { APP_GUARD } from '@nestjs/core';
+import { RedisModule} from './redis/redis.module';
 
 @Module({
   imports: [

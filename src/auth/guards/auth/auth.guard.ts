@@ -6,11 +6,15 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
   // 1. Внедряем нашу машинку для работы с токенами (JwtService)
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private redisService: RedisService,
+  ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     // Получаем объект самого HTTP-запроса (в нем лежат заголовки, тело и т.д.)
@@ -22,7 +26,10 @@ export class AuthGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException('Доступ запрещен: нет токена');
     }
-
+    const isBlacklisted = await this.redisService.get('blacklist:' + token);
+    if (isBlacklisted != null) {
+      throw new UnauthorizedException('Токен отозван');
+    }
     try {
       // 3. Светим на браслет ультрафиолетом! 
       // verifyAsync расшифрует токен и проверит его срок годности и подпись
