@@ -42,7 +42,7 @@ export class AuthController {
   async logout(@Request() req) {
     const token = req.headers.authorization.split(' ')[1];
     const exp = req.user.exp;
-    const ttl = Math.floor(exp - Date.now() / 1000);
+    const ttl = Math.max(Math.floor(exp - Date.now() / 1000), 1);
     await this.redisService.setWithTtl('blacklist:' + token, 'true', ttl);
     return { message: 'Logged out successfully' };
   }

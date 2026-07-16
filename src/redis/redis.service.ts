@@ -14,12 +14,24 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
     this.redisClient.quit();
   }
   async get(key: string) {
-    return this.redisClient.get(key);
+    try {
+      return await this.redisClient.get(key);
+    } catch (error) {
+      console.error('get error:', key, error);
+    }
   }
   async setWithTtl(key: string, value: string, ttl: number) {
-    return this.redisClient.set(key, value, 'EX', ttl);
+    try {
+      return await this.redisClient.set(key, value, 'EX', ttl);
+    } catch (error) {
+      console.error('setTTl error:', key, error);
+    }
   }
-  async del(key:string){
-    return this.redisClient.del(key);
+  async del(key: string) {
+    try {
+      return await this.redisClient.del(key);
+    } catch (error) {
+      console.error('del error:', key, error);
+    }
   }
 }

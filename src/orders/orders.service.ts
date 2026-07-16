@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly redisService: RedisService,
+  ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
     return await this.prisma.$transaction(async (prisma) => {
@@ -14,10 +18,8 @@ export class OrdersService {
         where: { id: { in: productIds } },
       });
 
-      // 2. Создаём Map для быстрого доступа O(1)
-      const productsMap = new Map(dbProducts.map((p) => [p.id, p]));
+      let productsMap1 = new Map(dbProducts.map((p) => [p.id, p]));
 
-      // 3. ОДИН проход: проверяем И создаём orderItems
       const orderItems = createOrderDto.items.map((item) => {
         const realProduct = productsMap.get(item.productId);
 
@@ -36,28 +38,30 @@ export class OrdersService {
           );
         }
 
-        // Возвращаем данные для OrderItem
         return {
           quantity: item.quantity,
-          price: realProduct.price, // ← теперь TypeScript знает, что realProduct существует
+          price: realProduct.price,
           product: {
             connect: { id: item.productId },
           },
         };
       });
 
-      // 4. Создаём заказ с готовым массивом orderItems
       const order = await prisma.order.create({
         data: {
           userId,
           status: 'PENDING',
           items: {
-            create: orderItems, // ← используем готовый массив
+            create: orderItems,
           },
         },
         include: {
           items: {
-            include: { product: true },
+            include: {
+              product: {
+                select: { id: true, name: true },
+              },
+            },
           },
         },
       });
@@ -71,6 +75,7 @@ export class OrdersService {
           }),
         ),
       );
+      await this.redisService.del('products:all');
 
       return order;
     });
@@ -93,7 +98,9 @@ export class OrdersService {
       where: { id },
       include: {
         items: { include: { product: true } },
-        user: true,
+        user: {
+          select: { id: true, email: true, name: true },
+        },
       },
     });
   }

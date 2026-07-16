@@ -25,7 +25,7 @@ export class CacheInterceptor implements NestInterceptor {
     next: CallHandler,
   ): Promise<Observable<any>> {
     const cacheKey = this.reflector.get<string>(CACHE_KEY_METADATA, context.getHandler());
-    const cacheTtl = this.reflector.get<number>(CACHE_TTL_METADATA, context.getHandler());
+    const cacheTtl = this.reflector.get<number>(CACHE_TTL_METADATA, context.getHandler())|| 60;
     if (!cacheKey) {
       return next.handle();
     }
@@ -36,10 +36,12 @@ export class CacheInterceptor implements NestInterceptor {
       return of(parsedData);
     }
     return next.handle().pipe(
-      tap(async (data) => {
+      tap((data) => {
         const stringData = JSON.stringify(data);
-        // Сохраняем в фоне, не задерживая ответ клиенту
-        this.redisService.setWithTtl(cacheKey, stringData, ttl);
+        this.redisService.setWithTtl(cacheKey, stringData, ttl).catch((err) => {
+          // Логируем ошибку, но не ломаем ответ клиенту
+          console.error('Ошибка записи в Redis: ${cacheKey}:', err.message);
+        });
       }),
     );
   }

@@ -14,7 +14,6 @@ model User {
   name     String?
   role     String   @default("CUSTOMER")
   
-  // Связь: у юзера может быть массив заказов
   orders   Order[]  
 }
 

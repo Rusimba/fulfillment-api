@@ -3,21 +3,25 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from 'src/redis/redis.service';
-import { CacheKey } from 'src/common/decorators/cache.decoractor';
 
 @Injectable()
 export class ProductsService {
-  // Внедряем Присму в класс
   constructor(
     private readonly prisma: PrismaService,
     private readonly redisService: RedisService,
   ) {}
 
   // Метод создания товара
-  create(createProductDto: CreateProductDto) {
-    return this.prisma.product.create({
+  async create(createProductDto: CreateProductDto) {
+    // 1. Создаем товар в базе
+    const newProduct = await this.prisma.product.create({
       data: createProductDto,
     });
+    // 2. Сбрасываем кэш каталога, так как появился новый товар
+    await this.redisService.del('products:all');
+
+    // 3. Возвращаем результат
+    return newProduct;
   }
 
   findAll() {
@@ -51,7 +55,7 @@ export class ProductsService {
     return product;
   }
 
- async update(id: number, updateProductDto: UpdateProductDto) {
+  async update(id: number, updateProductDto: UpdateProductDto) {
     const cacheKey = 'product:' + id;
 
     // 1. Обновляем товар в базе данных
@@ -62,8 +66,8 @@ export class ProductsService {
 
     // 2. Сбрасываем кэш конкретного товара
     await this.redisService.del(cacheKey);
-
     // 3. Сбрасываем кэш общего списка (ведь товар изменился!)
+
     await this.redisService.del('products:all');
 
     // 4. Возвращаем обновленный товар
@@ -76,6 +80,7 @@ export class ProductsService {
       where: {id: +id},
     });
     await this.redisService.del(cacheKey);
+    // 3. Сбрасываем кэш общего списка (ведь товар изменился!)
     await this.redisService.del('products:all');
     return deleteProduct;
   }

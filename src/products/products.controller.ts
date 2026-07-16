@@ -1,10 +1,17 @@
-import { Controller, Get, Post, Body, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { AuthGuard } from '../auth/guards/auth/auth.guard';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
 import { CacheInterceptor } from '../common/interceptors/cache.interceptor';
 import { CacheKey, CacheTTL } from '../common/decorators/cache.decoractor';
-import { RedisService } from 'src/redis/redis.service';
+import { CreateProductDto } from './dto/create-product.dto';
 
 @ApiTags('Товары (Products)')
 @ApiBearerAuth('JWT-auth')
@@ -12,15 +19,11 @@ import { RedisService } from 'src/redis/redis.service';
 @UseGuards(AuthGuard) // <-- Охранник на весь каталог
 @Controller('products')
 export class ProductsController {
-  constructor(
-    private readonly productsService: ProductsService,
-    private readonly redisService: RedisService,
-  ) {}
+  constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  async create(@Body() createProductDto: any) {
+  async create(@Body() createProductDto: CreateProductDto) {
     const createProfuct = await this.productsService.create(createProductDto);
-    await this.redisService.del('products:all');
     return createProfuct;
   }
 

@@ -26,16 +26,12 @@ export class AuthGuard implements CanActivate {
     if (!token) {
       throw new UnauthorizedException('Доступ запрещен: нет токена');
     }
-    const isBlacklisted = await this.redisService.get('blacklist:' + token);
-    if (isBlacklisted != null) {
-      throw new UnauthorizedException('Токен отозван');
-    }
     try {
       // 3. Светим на браслет ультрафиолетом! 
       // verifyAsync расшифрует токен и проверит его срок годности и подпись
       const payload = await this.jwtService.verifyAsync(token, {
-        secret: process.env.JWT_SECRET // Должно совпадать с тем, что в auth.module!
-        });
+        secret: process.env.JWT_SECRET, // Должно совпадать с тем, что в auth.module!
+      });
 
       // 4. САМОЕ ВАЖНОЕ: Кладем расшифрованные данные Ивана прямо в запрос.
       // Теперь любой Контроллер, к которому пойдет запрос дальше, будет знать, кто это!
@@ -43,6 +39,10 @@ export class AuthGuard implements CanActivate {
     } catch {
       // Если токен поддельный, или срок годности (1d) истек — выгоняем
       throw new UnauthorizedException('Доступ запрещен: недействительный токен');
+    }
+    const isBlacklisted = await this.redisService.get('blacklist:' + token);
+    if (isBlacklisted != null) {
+      throw new UnauthorizedException('Токен отозван');
     }
 
     // 5. Дверь открыта! Пропускаем клиента к Контроллеру
