@@ -1,5 +1,17 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common'; // <-- Проверь, что импортирован Get
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common'; // <-- Проверь, что импортирован Get
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { AuthGuard } from '../auth/guards/auth/auth.guard';

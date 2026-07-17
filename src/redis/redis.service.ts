@@ -27,11 +27,11 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
       console.error('setTTl error:', key, error);
     }
   }
-  async del(key: string) {
+  async del(...keys: string[]) {
     try {
-      return await this.redisClient.del(key);
+      return await this.redisClient.del(...keys);
     } catch (error) {
-      console.error('del error:', key, error);
+      console.error('del error:', keys, error);
     }
   }
 }

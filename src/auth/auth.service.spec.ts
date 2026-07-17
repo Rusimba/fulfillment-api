@@ -126,7 +126,10 @@ describe('AuthService', () => {
       const result = await authService.login(loginDto);
 
       expect(result).toEqual({ access_token: 'mock-token' });
-      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashedPassword');
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'password123',
+        'hashedPassword',
+      );
     });
 
     it('should throw UnauthorizedException if user not found', async () => {
@@ -159,7 +162,7 @@ describe('AuthService', () => {
       };
 
       mockPrismaService.user.findUnique.mockResolvedValue(mockUser);
-      
+
       // Настраиваем мок bcrypt
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 

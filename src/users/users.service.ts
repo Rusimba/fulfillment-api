@@ -10,17 +10,17 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     // 1. Сохраняем юзера в переменную, ждем пока Присма его создаст
-  const user = await this.prisma.user.create({
-  data: {
-    ...createUserDto,
-    password: hashedPassword,
-  },
-});
-  // 2. "Отрезаем" пароль в отдельную переменную, 
-  // а всё остальное (email, id, name) складываем в userWithoutPassword
-   const { password, ...userWithoutPassword } = user;
-  // 3. Возвращаем клиенту безопасного юзера
-  return userWithoutPassword;
+    const user = await this.prisma.user.create({
+      data: {
+        ...createUserDto,
+        password: hashedPassword,
+      },
+    });
+    // 2. "Отрезаем" пароль в отдельную переменную,
+    // а всё остальное (email, id, name) складываем в userWithoutPassword
+    const { password, ...userWithoutPassword } = user;
+    // 3. Возвращаем клиенту безопасного юзера
+    return userWithoutPassword;
   }
   findAll() {
     return `This action returns all users`;

@@ -3,7 +3,9 @@ import { ThrottlerGuard, ThrottlerRequest } from '@nestjs/throttler';
 
 @Injectable()
 export class CustomThrottlerGuard extends ThrottlerGuard {
-  protected async handleRequest(requestProps: ThrottlerRequest): Promise<boolean> {
+  protected async handleRequest(
+    requestProps: ThrottlerRequest,
+  ): Promise<boolean> {
     const { context } = requestProps;
     const request = context.switchToHttp().getRequest();
 

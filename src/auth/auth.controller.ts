@@ -28,17 +28,18 @@ export class AuthController {
   // Путь будет /auth/profile (слово get в пути писать не принято, так как метод GET уже об этом говорит)
   @Get('profile')
   @UseGuards(AuthGuard)
-  getProfile(@Request() req){// <-- Ловим весь объект запроса
+  getProfile(@Request() req) {
+    // <-- Ловим весь объект запроса
     // Вышибала пропустил запрос и положил расшифрованный токен в req.user.
     // Просто возвращаем его клиенту!
-    return req.user; 
+    return req.user;
   }
   @Post('register')
   register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
-@Post('logout')
-@UseGuards(AuthGuard)
+  @Post('logout')
+  @UseGuards(AuthGuard)
   async logout(@Request() req) {
     const token = req.headers.authorization.split(' ')[1];
     const exp = req.user.exp;

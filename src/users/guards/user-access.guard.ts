@@ -20,7 +20,7 @@ export class UserAccessGuard implements CanActivate {
       return true;
     }
 
-    if (sub !== targetUserId) {
+    if (user.sub !== targetUserId) {
       throw new ForbiddenException('Недостаточно прав для этого действия');
     }
 

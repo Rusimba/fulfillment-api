@@ -100,9 +100,7 @@ describe('OrdersService', () => {
 
       const userId = 1;
 
-      const mockProducts = [
-        { id: 1, name: 'Product 1', price: 100, stock: 5 },
-      ];
+      const mockProducts = [{ id: 1, name: 'Product 1', price: 100, stock: 5 }];
 
       mockPrismaService.product.findMany.mockResolvedValue(mockProducts);
 

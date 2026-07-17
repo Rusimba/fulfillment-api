@@ -27,7 +27,7 @@ export class AuthGuard implements CanActivate {
       throw new UnauthorizedException('Доступ запрещен: нет токена');
     }
     try {
-      // 3. Светим на браслет ультрафиолетом! 
+      // 3. Светим на браслет ультрафиолетом!
       // verifyAsync расшифрует токен и проверит его срок годности и подпись
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET, // Должно совпадать с тем, что в auth.module!
@@ -38,7 +38,9 @@ export class AuthGuard implements CanActivate {
       request['user'] = payload;
     } catch {
       // Если токен поддельный, или срок годности (1d) истек — выгоняем
-      throw new UnauthorizedException('Доступ запрещен: недействительный токен');
+      throw new UnauthorizedException(
+        'Доступ запрещен: недействительный токен',
+      );
     }
     const isBlacklisted = await this.redisService.get('blacklist:' + token);
     if (isBlacklisted != null) {

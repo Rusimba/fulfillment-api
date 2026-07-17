@@ -17,7 +17,9 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
   async register(registerDto: RegisterDto) {
-    if (await this.prisma.user.findUnique({ where: { email: registerDto.email } })) {
+    if (
+      await this.prisma.user.findUnique({ where: { email: registerDto.email } })
+    ) {
       throw new ConflictException('Пользователь с таким email уже существует');
     }
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
@@ -50,7 +52,10 @@ export class AuthService {
 
     // 3. Проверяем пароль.
     // bcrypt.compare берет обычный текст (из DTO) и хеш (из базы) и сверяет их. Возвращает true или false.
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
 
     // 4. Если пароли не совпали (false) — выгоняем!
     if (!isPasswordValid) {

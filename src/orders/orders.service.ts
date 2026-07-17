@@ -1,25 +1,23 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RedisService } from 'src/redis/redis.service';
+import { ProductsService } from 'src/products/products.service';
 
 @Injectable()
 export class OrdersService {
   constructor(
     private prisma: PrismaService,
-    private readonly redisService: RedisService,
+    private productsService: ProductsService,
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: number) {
-    return await this.prisma.$transaction(async (prisma) => {
+    const productIds = createOrderDto.items.map((item) => item.productId);
+    const order = await this.prisma.$transaction(async (prisma) => {
       // 1. Получаем товары из БД
-      const productIds = createOrderDto.items.map((item) => item.productId);
       const dbProducts = await prisma.product.findMany({
         where: { id: { in: productIds } },
       });
-
-      let productsMap1 = new Map(dbProducts.map((p) => [p.id, p]));
-
+      const productsMap = new Map(dbProducts.map((p) => [p.id, p]));
       const orderItems = createOrderDto.items.map((item) => {
         const realProduct = productsMap.get(item.productId);
 
@@ -47,7 +45,7 @@ export class OrdersService {
         };
       });
 
-      const order = await prisma.order.create({
+      const createOrder = await prisma.order.create({
         data: {
           userId,
           status: 'PENDING',
@@ -75,10 +73,10 @@ export class OrdersService {
           }),
         ),
       );
-      await this.redisService.del('products:all');
-
-      return order;
+      return createOrder;
     });
+    await this.productsService.invalidateProductsCache(productIds);
+    return order;
   }
 
   findMyOrders(userId: number) {

@@ -18,7 +18,7 @@ export class ProductsService {
       data: createProductDto,
     });
     // 2. Сбрасываем кэш каталога, так как появился новый товар
-    await this.redisService.del('products:all');
+    await this.invalidateProductsCache([]);
 
     // 3. Возвращаем результат
     return newProduct;
@@ -63,25 +63,20 @@ export class ProductsService {
       where: { id: +id },
       data: updateProductDto,
     });
-
-    // 2. Сбрасываем кэш конкретного товара
-    await this.redisService.del(cacheKey);
-    // 3. Сбрасываем кэш общего списка (ведь товар изменился!)
-
-    await this.redisService.del('products:all');
-
+    await this.invalidateProductsCache([id]);
     // 4. Возвращаем обновленный товар
     return updatedProduct;
   }
 
   async remove(id: number) {
-    const cacheKey = 'product:' + id;
     const deleteProduct = await this.prisma.product.delete({
-      where: {id: +id},
+      where: { id: +id },
     });
-    await this.redisService.del(cacheKey);
-    // 3. Сбрасываем кэш общего списка (ведь товар изменился!)
-    await this.redisService.del('products:all');
+    await this.invalidateProductsCache([id]);
     return deleteProduct;
+  }
+  public async invalidateProductsCache(ids: number[]) {
+    const keys = [...ids.map((id) => 'product:' + id), 'products:all'];
+    await this.redisService.del(...keys);
   }
 }
