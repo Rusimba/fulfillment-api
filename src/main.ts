@@ -14,7 +14,10 @@ async function bootstrap() {
   );
 
   // 1. Включаем CORS, чтобы в будущем наш React-фронтенд мог спокойно делать запросы
-  app.enableCors();
+  app.enableCors({
+    origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    credentials: true,
+  });
 
   // 2. Конфигурируем Swagger
   const config = new DocumentBuilder()

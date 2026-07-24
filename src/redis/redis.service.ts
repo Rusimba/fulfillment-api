@@ -3,11 +3,17 @@ import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private redisClient: Redis;
+  private redisClient!: Redis;
   onModuleInit() {
     this.redisClient = new Redis({
       host: process.env.REDIS_HOST,
       port: parseInt(process.env.REDIS_PORT || '6379', 10),
+      maxRetriesPerRequest: 3,
+      retryStrategy: (times) =>
+        times > 10 ? null : Math.min(times * 200, 2000),
+    });
+    this.redisClient.on('error', (err) => {
+      console.error('Redis connection error:', err.message);
     });
   }
   onModuleDestroy() {

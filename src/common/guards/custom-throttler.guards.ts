@@ -15,6 +15,6 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
     }
 
     // POST/PATCH/DELETE лимитируем (они меняют состояние)
-    return super.canActivate(context);
+    return super.handleRequest(requestProps);
   }
 }
